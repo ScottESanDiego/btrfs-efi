@@ -27,9 +27,7 @@ elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM" OR CMAKE_SYSTEM_PROCESSOR STREQUAL
     include_directories(${CMAKE_SOURCE_DIR}/gnu-efi/inc/arm)
 endif()
 
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    add_compile_options(-mno-stack-arg-probe)
-elseif(NOT MSVC)
+if(MSVC)
     add_compile_options(-fpic -fpie -fshort-wchar -fno-ident)
     add_compile_options(-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0)
 
@@ -37,6 +35,10 @@ elseif(NOT MSVC)
         add_compile_options(-mcmodel=tiny)
     elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
         add_compile_options(-mno-sse)
+    endif()
+else()
+    if (CMAKE_C_COMPILER_ID STREQUAL "Clang" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "X86")
+        add_compile_options(-mno-stack-arg-probe)
     endif()
 endif()
 
@@ -93,37 +95,17 @@ target_link_libraries(btrfs zstd zlib)
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set_target_properties(btrfs PROPERTIES SUFFIX ".efi")
 else()
-    target_compile_definitions(btrfs PRIVATE NEED_DUMMY_RELOC)
-    target_compile_definitions(btrfs PRIVATE GNU_EFI_USE_MS_ABI)
-
-    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-        target_link_options(btrfs PRIVATE -T ${CMAKE_SOURCE_DIR}/gnu-efi/gnuefi/elf_x86_64_efi.lds)
-        add_custom_command(TARGET btrfs
-            POST_BUILD COMMAND ${CMAKE_OBJCOPY} -O efi-bsdrv-x86_64 -j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rodata -j .rel -j .rela -j ".rel.*" -j ".rela.*" -j ".rel*" -j ".rela*" -j .reloc --strip-unneeded btrfs btrfs.efi
-            BYPRODUCTS btrfs.efi
-        )
-    elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
-        target_link_options(btrfs PRIVATE -T ${CMAKE_SOURCE_DIR}/gnu-efi/gnuefi/elf_aarch64_efi.lds)
-        add_custom_command(TARGET btrfs
-            POST_BUILD COMMAND ${CMAKE_OBJCOPY} -O efi-bsdrv-aarch64 -j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rodata -j .rel -j .rela -j ".rel.*" -j ".rela.*" -j ".rel*" -j ".rela*" -j .reloc --strip-unneeded btrfs btrfs.efi
-            BYPRODUCTS btrfs.efi
-        )
-    elseif (CMAKE_SYSTEM_PROCESSOR STREQUAL "X86")
-        message(FATAL_ERROR "Please use mingw to compile for x86")
-    endif()
+    message(FATAL_ERROR "Please use mingw to compile")
 endif()
 
 if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
-    target_link_options(btrfs PRIVATE "-nostartfiles")
-
-    if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        target_link_options(btrfs PRIVATE "-Wl,--subsystem,11")
-    endif()
+    target_link_options(btrfs PRIVATE -nostartfiles -nostdlib)
+    target_link_options(btrfs PRIVATE "-Wl,--subsystem,11")
 
     if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "X86")
-        target_link_options(btrfs PRIVATE "-e_efi_main")
+        target_link_options(btrfs PRIVATE -e _efi_main)
     else()
-        target_link_options(btrfs PRIVATE "-eefi_main")
+        target_link_options(btrfs PRIVATE -e efi_main)
     endif()
 elseif(MSVC)
     target_link_options(btrfs PRIVATE "/SUBSYSTEM:EFI_BOOT_SERVICE_DRIVER")

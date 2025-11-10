@@ -12,13 +12,13 @@ jobs:
       - run: mkdir -p install/debug
       - run: |
           cmake -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_TOOLCHAIN_FILE=mingw-x86.cmake \
+            -DCMAKE_TOOLCHAIN_FILE=x86.cmake \
             -S ${SHORT_SHA} -B debug-work && \
           cmake --build debug-work --parallel `nproc` && \
           cp debug-work/btrfs.efi install/debug/
       - run: |
           cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-            -DCMAKE_TOOLCHAIN_FILE=mingw-x86.cmake \
+            -DCMAKE_TOOLCHAIN_FILE=x86.cmake \
             -S ${SHORT_SHA} -B release-work && \
           cmake --build release-work --parallel `nproc` && \
           cp release-work/btrfs.efi install/

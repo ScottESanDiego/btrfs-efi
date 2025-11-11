@@ -98,9 +98,14 @@ else()
     message(FATAL_ERROR "Please use mingw to compile")
 endif()
 
+if(${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
+    target_link_options(btrfs PRIVATE "-Wl,--subsystem,efi_boot_service_driver")
+elseif(${CMAKE_C_COMPILER_ID} STREQUAL "GNU")
+    target_link_options(btrfs PRIVATE "-Wl,--subsystem,11")
+endif()
+
 if(${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
     target_link_options(btrfs PRIVATE -nostartfiles -nostdlib)
-    target_link_options(btrfs PRIVATE "-Wl,--subsystem,11")
 
     if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "X86")
         target_link_options(btrfs PRIVATE -e _efi_main)

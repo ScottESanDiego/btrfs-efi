@@ -218,6 +218,21 @@ static EFI_STATUS bootstrap_roots(volume* vol) {
     return EFI_SUCCESS;
 }
 
+static unsigned int ilog2(uint64_t n) {
+#ifdef _MSC_VER
+    for (unsigned int i = 0; i < 64; i++) {
+        if (n & 1)
+            return i;
+
+        n >>= 1;
+    }
+
+    return 64;
+#else
+    return __builtin_ctz(n);
+#endif
+}
+
 static EFI_STATUS read_data(volume* vol, uint64_t address, uint32_t size, void* data) {
     EFI_STATUS Status;
     LIST_ENTRY* le;
@@ -273,7 +288,7 @@ static EFI_STATUS read_data(volume* vol, uint64_t address, uint32_t size, void* 
 
         if (stripes[i].dev_id == vol->sb->dev_item.dev_id) {
             Status = vol->block->ReadBlocks(vol->block, vol->block->Media->MediaId,
-                                            (stripes[i].offset + address - c->address) / vol->block->Media->BlockSize,
+                                            (stripes[i].offset + address - c->address) >> ilog2(vol->block->Media->BlockSize),
                                             size, data);
             if (EFI_ERROR(Status)) {
                 do_print_error("ReadBlocks", Status);
@@ -2651,7 +2666,7 @@ static EFI_STATUS EFIAPI drv_start(EFI_DRIVER_BINDING_PROTOCOL* This, EFI_HANDLE
     // read superblock
     // FIXME - check other superblocks?
 
-    Status = block->ReadBlocks(block, block->Media->MediaId, superblock_addrs[0] / block->Media->BlockSize, sblen, sb);
+    Status = block->ReadBlocks(block, block->Media->MediaId, superblock_addrs[0] >> ilog2(block->Media->BlockSize), sblen, sb);
     if (EFI_ERROR(Status)) {
         bs->FreePool(sb);
         bs->CloseProtocol(ControllerHandle, &block_guid, This->DriverBindingHandle, ControllerHandle);

@@ -12,3 +12,5 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
+# choose a CPU that supports integer divisions
+set(CMAKE_C_FLAGS -mcpu=cortex-a72)

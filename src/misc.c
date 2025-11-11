@@ -424,7 +424,7 @@ char* hex_to_str(char* s, uint64_t v) {
     return end;
 }
 
-char* dec_to_str(char* s, uint64_t v) {
+char* dec_to_str(char* s, uint32_t v) {
     char *end, *p;
 
     if (v == 0) {
@@ -438,7 +438,7 @@ char* dec_to_str(char* s, uint64_t v) {
     end = s;
 
     {
-        uint64_t n = v;
+        uint32_t n = v;
 
         while (n != 0) {
             end++;

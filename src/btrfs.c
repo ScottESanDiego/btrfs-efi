@@ -1419,9 +1419,10 @@ static EFI_STATUS EFIAPI file_delete(struct _EFI_FILE_HANDLE* File) {
 }
 
 static void btrfs_time_to_efi_time(const BTRFS_TIME* b, EFI_TIME* e) {
-    signed long long j, e2, f, g, h;
-    uint64_t days = b->seconds / 86400;
-    uint64_t secs = b->seconds % 86400;
+    uint32_t count = (uint32_t)b->seconds; // FIXME - breaks for dates after 2106
+    int32_t j, e2, f, g, h;
+    uint32_t days = count / 86400;
+    uint32_t secs = count % 86400;
 
     j = days + 2440588;
 

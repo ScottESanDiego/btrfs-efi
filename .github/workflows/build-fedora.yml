@@ -1,0 +1,45 @@
+name: build fedora
+on: [push]
+jobs:
+  fedora:
+    runs-on: fedora-rawhide
+    steps:
+      - run: dnf update -y
+      - run: dnf install -y git cmake nodejs clang mingw64-headers lld llvm
+      - run: echo "SHORT_SHA=`echo ${{ github.sha }} | cut -c1-8`" >> $GITHUB_ENV
+      - run: git clone --recurse-submodules ${{ github.server_url }}/${{ github.repository }} ${SHORT_SHA}
+      - run: cd ${SHORT_SHA} && git checkout ${{ github.sha }}
+      - run: mkdir install
+      - run: |
+          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_TOOLCHAIN_FILE=clang-amd64.cmake \
+            -DCMAKE_C_COMPILER_WORKS=ON \
+            -DCMAKE_C_STANDARD_INCLUDE_DIRECTORIES=/usr/x86_64-w64-mingw32/sys-root/mingw/include \
+            -DCMAKE_C_STANDARD_LIBRARIES="" \
+            -S ${SHORT_SHA} -B amd64 && \
+          cmake --build amd64 --parallel `nproc` && \
+          cp amd64/btrfs.efi install/btrfs-amd64.efi
+      - run: |
+          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_TOOLCHAIN_FILE=clang-x86.cmake \
+            -DCMAKE_C_COMPILER_WORKS=ON \
+            -DCMAKE_C_STANDARD_INCLUDE_DIRECTORIES=/usr/x86_64-w64-mingw32/sys-root/mingw/include \
+            -DCMAKE_C_STANDARD_LIBRARIES="" \
+            -S ${SHORT_SHA} -B x86 && \
+          cmake --build x86 --parallel `nproc` && \
+          cp x86/btrfs.efi install/btrfs-x86.efi
+      - run: |
+          cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_TOOLCHAIN_FILE=clang-aarch64.cmake \
+            -DCMAKE_C_COMPILER_WORKS=ON \
+            -DCMAKE_C_STANDARD_INCLUDE_DIRECTORIES=/usr/x86_64-w64-mingw32/sys-root/mingw/include \
+            -DCMAKE_C_STANDARD_LIBRARIES="" \
+            -S ${SHORT_SHA} -B aarch64 && \
+          cmake --build aarch64 --parallel `nproc` && \
+          cp aarch64/btrfs.efi install/btrfs-aarch64.efi
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ github.sha }}
+          overwrite: true
+          path: |
+            install
